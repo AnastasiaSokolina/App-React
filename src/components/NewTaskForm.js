@@ -64,7 +64,7 @@ export default class NewTaskForm extends Component {
       <form className="new-todo-form">
         <input
           className="new-todo"
-          placeholder="What needs to be done?"
+          placeholder="what needs to be done?"
           autoFocus
           value={this.state.text}
           onChange={this.textInput}
@@ -72,7 +72,7 @@ export default class NewTaskForm extends Component {
         />
         <input
           className="new-todo-form__timer"
-          placeholder="Min"
+          placeholder="min"
           autoFocus
           value={this.state.minutes}
           onChange={this.minutesInput}
@@ -80,7 +80,7 @@ export default class NewTaskForm extends Component {
         />
         <input
           className="new-todo-form__timer"
-          placeholder="Sec"
+          placeholder="sec"
           autoFocus
           value={this.state.seconds}
           onChange={this.secondsInput}
