@@ -11,11 +11,15 @@ export default class App extends Component {
     super()
     this.state = {
       tasks: [
-        { id: 1, text: 'not to die', completed: false, editing: false },
-        { id: 2, text: 'to stay alive', completed: false, editing: false },
-        { id: 3, text: 'drink sth strong', completed: false, editing: false },
+        // { id: 1, text: 'cheer up', completed: false, editing: false, activeTimer: false, timerId: null },
+        // { id: 2, text: 'pussyfoot react', completed: false, editing: false, activeTimer: false, timerId: null },
+        // { id: 3, text: 'do fucking app', completed: false, editing: false, activeTimer: false, timerId: null },
       ],
       filter: 'all',
+      minutes: '',
+      seconds: '',
+      currentTime: 0,
+      timerIds: {},
     }
   }
 
@@ -25,11 +29,73 @@ export default class App extends Component {
     }))
   }
 
-  handleAddTask = (newTask) => {
-    const createdTask = { ...newTask, createdAt: new Date() }
+  handleAddTask = (newTask, minutes, seconds) => {
+    let currentTime = 0
+
+    if (minutes !== '') {
+      currentTime += parseInt(minutes) * 60
+    }
+
+    if (seconds !== '') {
+      currentTime += parseInt(seconds)
+    }
+
+    const createdTask = {
+      ...newTask,
+      createdAt: new Date(),
+      currentTime: currentTime,
+    }
+
     this.setState((prevState) => ({
       tasks: [...prevState.tasks, createdTask],
     }))
+  }
+
+  startTimer = (taskId) => {
+    clearInterval(this.state.timerIds[taskId])
+
+    const timerId = setInterval(() => {
+      const updatedTasks = this.state.tasks.map((task) => {
+        if (task.id === taskId && task.currentTime > 0) {
+          return { ...task, currentTime: task.currentTime - 1 }
+        } else if (task.id === taskId && task.currentTime === 0) {
+          clearInterval(this.state.timerIds[taskId])
+          return { ...task, isRunning: false }
+        }
+        return task
+      })
+      this.updateTaskState(updatedTasks, taskId)
+    }, 1000)
+
+    this.setState((prevState) => ({
+      timerIds: {
+        ...prevState.timerIds,
+        [taskId]: timerId,
+      },
+    }))
+  }
+
+  pauseTimer = (taskId) => {
+    clearInterval(this.state.timerIds[taskId])
+    const updatedTasks = this.state.tasks.map((task) => {
+      if (task.id === taskId) {
+        return { ...task, isRunning: false }
+      }
+      return task
+    })
+    this.setState({ tasks: updatedTasks })
+  }
+
+  updateTaskState = (updatedTasks, taskId) => {
+    const taskToUpdate = updatedTasks.find((task) => task.id === taskId)
+    if (taskToUpdate) {
+      this.setState({
+        tasks: updatedTasks,
+        currentTime: taskToUpdate.currentTime,
+      })
+    } else {
+      console.error(`Task with ID ${taskId} not found.`)
+    }
   }
 
   handleDeleteTask = (id) => {
@@ -82,7 +148,7 @@ export default class App extends Component {
     return (
       <section className="todoapp">
         <header className="header">
-          <h1>TODO App</h1>
+          <h1>todos</h1>
           <NewTaskForm onAddTask={this.handleAddTask} />
         </header>
         <section className="main">
@@ -93,6 +159,10 @@ export default class App extends Component {
             clickOnInput={this.clickOnInput}
             onEditTask={this.handleEditTask}
             createdAt={new Date()}
+            minutes={this.state.minutes}
+            seconds={this.state.seconds}
+            startTimer={this.startTimer}
+            pauseTimer={this.pauseTimer}
           />
           <Footer
             filter={this.state.filter}

@@ -5,12 +5,13 @@ import PropTypes from 'prop-types'
 import './Task.css'
 
 export default class Task extends Component {
-  constructor() {
-    super()
+  constructor(props) {
+    super(props)
     this.state = {
       completed: false,
       editing: false,
       editingTaskText: '',
+      currentTime: props.task.currentTime,
     }
   }
 
@@ -18,12 +19,51 @@ export default class Task extends Component {
     task: {},
     className: '',
     onDelete: () => {},
+    onTaskCompleted: () => {},
+    clickOnInput: () => {},
+    onEditTask: () => {},
+    createdAt: new Date(),
+    minutes: '',
+    seconds: '',
+    startTimer: () => {},
+    pauseTimer: () => {},
   }
 
   static propTypes = {
     task: PropTypes.object.isRequired,
     className: PropTypes.string,
     onDelete: PropTypes.func.isRequired,
+    onTaskCompleted: PropTypes.func.isRequired,
+    clickOnInput: PropTypes.func.isRequired,
+    onEditTask: PropTypes.func.isRequired,
+    createdAt: PropTypes.instanceOf(Date).isRequired,
+    minutes: PropTypes.string,
+    seconds: PropTypes.string,
+    startTimer: PropTypes.func,
+    pauseTimer: PropTypes.func,
+  }
+
+  handleStartTimer = () => {
+    const { startTimer, task } = this.props
+    startTimer(task.id)
+  }
+
+  handlePauseTimer = () => {
+    const { pauseTimer } = this.props
+    pauseTimer()
+  }
+
+  componentDidUpdate(prevProps) {
+    if (prevProps.task.completed !== this.props.task.completed) {
+      if (this.props.task.completed) {
+        clearInterval(this.timerId)
+        this.setState({ currentTime: 0 })
+      }
+    }
+
+    if (prevProps.task.currentTime !== this.props.task.currentTime) {
+      this.setState({ currentTime: this.props.task.currentTime })
+    }
   }
 
   handleEdit = () => {
@@ -51,7 +91,7 @@ export default class Task extends Component {
 
   render() {
     const { task, className, onDelete } = this.props
-    const { editing, editingTaskText } = this.state
+    const { editing, editingTaskText, currentTime } = this.state
     const liClassName = `${className ? `${className} ` : ''}${task.completed ? 'completed' : ''}${editing ? ' editing' : ''}`
 
     return (
@@ -66,9 +106,15 @@ export default class Task extends Component {
                 defaultChecked={task.completed}
               />
               <label>
-                <span className="description">{task.text}</span>
-
-                <span className="created">created {formatDistanceToNow(new Date(this.props.createdAt))} ago</span>
+                <span className="description title">{task.text}</span>
+                <span className="description control-timer">
+                  <button className="icon icon-play" onClick={() => this.handleStartTimer(task.id)}></button>
+                  <button className="icon icon-pause" onClick={this.handlePauseTimer}></button>
+                  <span>
+                    {`${Math.floor(currentTime / 60)}:${currentTime % 60 < 10 ? '0' : ''}${currentTime % 60}`}
+                  </span>
+                </span>
+                <span className="description">{formatDistanceToNow(new Date(this.props.createdAt))}</span>
               </label>
               <button className="icon icon-edit" onClick={this.handleEdit} />
               <button className="icon icon-destroy" onClick={onDelete} />

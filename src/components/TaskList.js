@@ -12,6 +12,10 @@ export default class TaskList extends Component {
     clickOnInput: () => {},
     onEditTask: () => {},
     createdAt: new Date(),
+    minutes: '',
+    seconds: '',
+    startTimer: () => {},
+    pauseTimer: () => {},
   }
 
   static propTypes = {
@@ -21,6 +25,14 @@ export default class TaskList extends Component {
     clickOnInput: PropTypes.func.isRequired,
     onEditTask: PropTypes.func.isRequired,
     createdAt: PropTypes.instanceOf(Date).isRequired,
+    minutes: PropTypes.string,
+    seconds: PropTypes.string,
+    startTimer: PropTypes.func,
+    pauseTimer: PropTypes.func,
+  }
+
+  parseCurrentTime(currentTime) {
+    return currentTime ? parseInt(currentTime, 10) : 0
   }
 
   render() {
@@ -35,6 +47,10 @@ export default class TaskList extends Component {
         clickOnInput={this.props.clickOnInput}
         onEditTask={this.props.onEditTask}
         createdAt={this.props.createdAt}
+        minutes={task.minutes}
+        seconds={task.seconds}
+        startTimer={this.props.startTimer}
+        pauseTimer={() => this.props.pauseTimer(task.id)}
       />
     ))
 
