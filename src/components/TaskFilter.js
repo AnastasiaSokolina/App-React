@@ -1,54 +1,40 @@
-import React, { Component } from 'react'
-import PropTypes from 'prop-types'
+import React from 'react'
 
 import './TaskFilter.css'
 
-export default class TaskFilter extends Component {
-  static defaultProps = {
-    onFilterTasks: () => {},
-  }
-
-  static propTypes = {
-    onFilterTasks: PropTypes.func,
-  }
-
-  constructor() {
-    super()
-    this.state = {
-      selectedFilter: 'all',
-    }
-  }
-
-  handleClick = (filter) => {
-    const { onFilterTasks } = this.props
-    onFilterTasks(filter)
-    this.setState({ selectedFilter: filter })
-  }
-
-  render() {
-    const { selectedFilter } = this.state
-
-    return (
-      <ul className="filters">
-        <li>
-          <button onClick={() => this.handleClick('all')} className={selectedFilter === 'all' ? 'selected' : ''}>
-            All
-          </button>
-        </li>
-        <li>
-          <button onClick={() => this.handleClick('active')} className={selectedFilter === 'active' ? 'selected' : ''}>
-            Active
-          </button>
-        </li>
-        <li>
-          <button
-            onClick={() => this.handleClick('completed')}
-            className={selectedFilter === 'completed' ? 'selected' : ''}
-          >
-            Completed
-          </button>
-        </li>
-      </ul>
-    )
-  }
+function TaskFilter({ onChangeFilter, filter }) {
+  return (
+    <ul className="filters">
+      <li>
+        <button onClick={() => onChangeFilter('All')} className={filter === 'All' ? 'selected' : null} type="button">
+          All
+        </button>
+      </li>
+      <li>
+        <button
+          onClick={() => onChangeFilter('Active')}
+          className={filter === 'Active' ? 'selected' : null}
+          type="button"
+        >
+          Active
+        </button>
+      </li>
+      <li>
+        <button
+          onClick={() => onChangeFilter('Completed')}
+          className={filter === 'Completed' ? 'selected' : null}
+          type="button"
+        >
+          Completed
+        </button>
+      </li>
+    </ul>
+  )
 }
+
+TaskFilter.defaultProps = {
+  onChangeFilter: () => {},
+  filter: 'All',
+}
+
+export default TaskFilter

@@ -1,136 +1,119 @@
-import React, { Component } from 'react'
+import React, { useEffect, useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import PropTypes from 'prop-types'
 
 import './Task.css'
 
-export default class Task extends Component {
-  constructor(props) {
-    super(props)
-    this.state = {
-      completed: false,
-      editing: false,
-      editingTaskText: '',
-      currentTime: props.task.currentTime,
+function Task({
+  label,
+  onDelete,
+  onToggleDone,
+  done,
+  id,
+  created,
+  time,
+  onStopTimer,
+  onStartTimer,
+  updateTask,
+  timerStep,
+}) {
+  const [changedTaskLabel, setChangedTaskLabel] = useState('')
+  const [edited, setEdited] = useState(false)
+  const [timerId, setTimerId] = useState(null)
+
+  useEffect(() => {
+    const intervalTime = setInterval(() => timerStep(id), 1000)
+    setTimerId(intervalTime)
+
+    return () => {
+      clearInterval(intervalTime)
+    }
+  }, [id, timerStep])
+
+  const onClickEdit = (prevLabel) => {
+    setChangedTaskLabel(prevLabel)
+    setEdited(true)
+  }
+
+  const onChangeTask = (event) => {
+    setChangedTaskLabel(event.target.value)
+  }
+
+  const onSubmitUpdatedTask = (event) => {
+    event.preventDefault()
+    if (changedTaskLabel.trim()) {
+      updateTask(id, changedTaskLabel)
+      setChangedTaskLabel('')
+      setEdited(false)
     }
   }
 
-  static defaultProps = {
-    task: {},
-    className: '',
-    onDelete: () => {},
-    onTaskCompleted: () => {},
-    clickOnInput: () => {},
-    onEditTask: () => {},
-    createdAt: new Date(),
-    minutes: '',
-    seconds: '',
-    startTimer: () => {},
-    pauseTimer: () => {},
+  const minutes = time ? Math.floor(time / 1000 / 60) : 0
+  const seconds = time ? (time / 1000) % 60 : 0
+
+  let liClassName = ''
+  if (done) {
+    liClassName = 'completed'
+  } else if (edited) {
+    liClassName = 'editing'
   }
 
-  static propTypes = {
-    task: PropTypes.object.isRequired,
-    className: PropTypes.string,
-    onDelete: PropTypes.func.isRequired,
-    onTaskCompleted: PropTypes.func.isRequired,
-    clickOnInput: PropTypes.func.isRequired,
-    onEditTask: PropTypes.func.isRequired,
-    createdAt: PropTypes.instanceOf(Date).isRequired,
-    minutes: PropTypes.string,
-    seconds: PropTypes.string,
-    startTimer: PropTypes.func,
-    pauseTimer: PropTypes.func,
-  }
-
-  handleStartTimer = () => {
-    const { startTimer, task } = this.props
-    startTimer(task.id)
-  }
-
-  handlePauseTimer = () => {
-    const { pauseTimer } = this.props
-    pauseTimer()
-  }
-
-  componentDidUpdate(prevProps) {
-    if (prevProps.task.completed !== this.props.task.completed) {
-      if (this.props.task.completed) {
-        clearInterval(this.timerId)
-        this.setState({ currentTime: 0 })
-      }
-    }
-
-    if (prevProps.task.currentTime !== this.props.task.currentTime) {
-      this.setState({ currentTime: this.props.task.currentTime })
-    }
-  }
-
-  handleEdit = () => {
-    this.setState({ editing: true, editingTaskText: this.props.task.text })
-  }
-
-  handleInputChange = (e) => {
-    this.setState({ editingTaskText: e.target.value })
-  }
-
-  handleSave = () => {
-    const { task } = this.props
-    const { editingTaskText } = this.state
-    if (editingTaskText.trim() !== '') {
-      this.props.onEditTask(task.id, editingTaskText)
-      this.setState({ editing: false })
-    }
-  }
-
-  handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      this.handleSave()
-    }
-  }
-
-  render() {
-    const { task, className, onDelete } = this.props
-    const { editing, editingTaskText, currentTime } = this.state
-    const liClassName = `${className ? `${className} ` : ''}${task.completed ? 'completed' : ''}${editing ? ' editing' : ''}`
-
-    return (
-      <li className={liClassName}>
+  return (
+    <li className={liClassName}>
+      {edited ? (
+        <form onSubmit={onSubmitUpdatedTask}>
+          <input type="text" className="edit" value={changedTaskLabel} onChange={onChangeTask} />
+        </form>
+      ) : (
         <div className="view">
-          {!editing ? (
-            <>
-              <input
-                className="toggle"
-                type="checkbox"
-                onClick={() => this.props.clickOnInput(task.id)}
-                defaultChecked={task.completed}
+          <input className="toggle" type="checkbox" checked={done} onChange={() => onToggleDone(id)} id={id} />
+          <label htmlFor={id}>
+            <span className="title">{label}</span>
+            <span className="description control-timer">
+              <button
+                className="icon icon-play"
+                aria-label="start timer"
+                onClick={() => onStartTimer(id)}
+                type="button"
               />
-              <label>
-                <span className="description title">{task.text}</span>
-                <span className="description control-timer">
-                  <button className="icon icon-play" onClick={() => this.handleStartTimer(task.id)}></button>
-                  <button className="icon icon-pause" onClick={this.handlePauseTimer}></button>
-                  <span>
-                    {`${Math.floor(currentTime / 60)}:${currentTime % 60 < 10 ? '0' : ''}${currentTime % 60}`}
-                  </span>
-                </span>
-                <span className="description">{formatDistanceToNow(new Date(this.props.createdAt))}</span>
-              </label>
-              <button className="icon icon-edit" onClick={this.handleEdit} />
-              <button className="icon icon-destroy" onClick={onDelete} />
-            </>
-          ) : (
-            <input
-              className="edit"
-              type="text"
-              value={editingTaskText}
-              onChange={this.handleInputChange}
-              onKeyPress={this.handleKeyPress}
-              autoFocus
-            />
+              <button
+                className="icon icon-pause"
+                aria-label="stop timer"
+                onClick={() => onStopTimer(id)}
+                type="button"
+              />
+              <span>
+                {minutes < 10 ? `0${minutes}` : minutes}:{seconds < 10 ? `0${seconds}` : seconds}
+              </span>
+            </span>
+            <span className="description">created {formatDistanceToNow(created, { includeSeconds: true })} ago </span>
+          </label>
+          {!done && (
+            <button aria-label="Edit" type="button" className="icon icon-edit" onClick={() => onClickEdit(label)} />
           )}
+          <button
+            aria-label="Delete"
+            type="button"
+            className="icon icon-destroy"
+            onClick={() => onDelete(id, timerId)}
+          />
         </div>
-      </li>
-    )
-  }
+      )}
+    </li>
+  )
 }
+
+Task.propTypes = {
+  label: PropTypes.string.isRequired,
+  onDelete: PropTypes.func.isRequired,
+  onToggleDone: PropTypes.func.isRequired,
+  updateTask: PropTypes.func.isRequired,
+  done: PropTypes.bool.isRequired,
+  created: PropTypes.instanceOf(Date).isRequired,
+  time: PropTypes.number.isRequired,
+  onStopTimer: PropTypes.func.isRequired,
+  onStartTimer: PropTypes.func.isRequired,
+  timerStep: PropTypes.func.isRequired,
+}
+
+export default Task

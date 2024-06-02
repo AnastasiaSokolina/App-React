@@ -1,92 +1,74 @@
-import React, { Component } from 'react'
+import React, { useState } from 'react'
 import PropTypes from 'prop-types'
 
 import './NewTaskForm.css'
 
-export default class NewTaskForm extends Component {
-  static defaultProps = {
-    onAddTask: () => {},
-    minutes: '',
-    seconds: '',
+function NewTaskForm(props) {
+  const [label, setLabel] = useState('')
+  const [timeMin, setTimeMin] = useState('')
+  const [timeSec, setTimeSec] = useState('')
+
+  const onLabelChange = (e) => {
+    setLabel(e.target.value)
   }
 
-  static propTypes = {
-    onAddTask: PropTypes.func,
-    minutes: PropTypes.string,
-    seconds: PropTypes.string,
-  }
-
-  constructor() {
-    super()
-    this.state = {
-      text: '',
-      minutes: '',
-      seconds: '',
+  const onTimeMinChange = (e) => {
+    const min = parseInt(e.target.value)
+    if (!isNaN(min) && min >= 0) {
+      setTimeMin(min)
     }
   }
 
-  minutesInput = (e) => {
-    this.setState({ minutes: e.target.value })
-  }
-
-  secondsInput = (e) => {
-    this.setState({ seconds: e.target.value })
-  }
-
-  textInput = (e) => {
-    this.setState({ text: e.target.value })
-  }
-
-  handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-
-      const { text, minutes, seconds } = this.state
-
-      if (isNaN(minutes) || isNaN(seconds) || parseInt(minutes) < 0 || parseInt(seconds) < 0) {
-        alert('Please enter valid numbers for minutes and seconds.')
-        return
-      }
-
-      const newTask = {
-        id: Math.random().toString(36).substr(2, 9),
-        text: text,
-        minutes: minutes,
-        seconds: seconds,
-      }
-      this.props.onAddTask(newTask, minutes, seconds)
-      this.setState({ text: '', minutes: '', seconds: '' })
+  const onTimeSecChange = (e) => {
+    const sec = parseInt(e.target.value)
+    if (!isNaN(sec) && sec >= 0) {
+      setTimeSec(sec)
     }
   }
 
-  render() {
-    return (
-      <form className="new-todo-form">
-        <input
-          className="new-todo"
-          placeholder="what needs to be done?"
-          autoFocus
-          value={this.state.text}
-          onChange={this.textInput}
-          onKeyPress={this.handleKeyPress}
-        />
-        <input
-          className="new-todo-form__timer"
-          placeholder="min"
-          autoFocus
-          value={this.state.minutes}
-          onChange={this.minutesInput}
-          onKeyPress={this.handleKeyPress}
-        />
-        <input
-          className="new-todo-form__timer"
-          placeholder="sec"
-          autoFocus
-          value={this.state.seconds}
-          onChange={this.secondsInput}
-          onKeyPress={this.handleKeyPress}
-        />
-      </form>
-    )
+  const onSubmit = (e) => {
+    e.preventDefault()
+    const { addItem } = props
+    const totalTime = Number(timeMin) * 60 * 1000 + Number(timeSec) * 1000
+    if (label.trim().length !== 0) {
+      addItem(label, totalTime)
+      setLabel('')
+      setTimeMin('')
+      setTimeSec('')
+    }
   }
+  return (
+    <form onSubmit={onSubmit} className="new-todo-form">
+      <input
+        type="text"
+        className="new-todo"
+        id="taskInput"
+        name="taskInput"
+        placeholder="what needs to be done?"
+        value={label}
+        onChange={onLabelChange}
+      />
+      <input
+        className="new-todo-form__timer"
+        placeholder="min"
+        value={timeMin}
+        type="number"
+        onChange={onTimeMinChange}
+      />
+      <input
+        className="new-todo-form__timer"
+        placeholder="sec"
+        value={timeSec}
+        type="number"
+        onChange={onTimeSecChange}
+      />
+      <button type="submit" style={{ display: 'none' }} aria-hidden />
+    </form>
+  )
 }
+
+NewTaskForm.propTypes = {
+  addItem: PropTypes.func.isRequired,
+}
+
+export default NewTaskForm

@@ -1,178 +1,140 @@
-import React, { Component } from 'react'
-import ReactDOM from 'react-dom'
+import React, { useState } from 'react'
 
 import NewTaskForm from './NewTaskForm'
 import TaskList from './TaskList'
 import Footer from './Footer'
 import './App.css'
 
-export default class App extends Component {
-  constructor() {
-    super()
-    this.state = {
-      tasks: [
-        // { id: 1, text: 'cheer up', completed: false, editing: false, activeTimer: false, timerId: null },
-        // { id: 2, text: 'pussyfoot react', completed: false, editing: false, activeTimer: false, timerId: null },
-        // { id: 3, text: 'do fucking app', completed: false, editing: false, activeTimer: false, timerId: null },
-      ],
-      filter: 'all',
-      minutes: '',
-      seconds: '',
-      currentTime: 0,
-      timerIds: {},
-    }
-  }
+const findIndexById = (array, id) => array.findIndex((el) => el.id === id)
 
-  handleTaskCompleted = (id, completed) => {
-    this.setState((prevState) => ({
-      tasks: prevState.tasks.map((task) => (task.id === id ? { ...task, completed } : task)),
-    }))
-  }
+function App() {
+  const [todoData, setTodoData] = useState([])
+  const [filter, setFilter] = useState('All')
+  const [errorMessage, setErrorMessage] = useState('')
 
-  handleAddTask = (newTask, minutes, seconds) => {
-    let currentTime = 0
-
-    if (minutes !== '') {
-      currentTime += parseInt(minutes) * 60
+  const addItem = (text, time) => {
+    if (time < 0) {
+      setErrorMessage('Enter only positive numbers')
+      setTimeout(() => {
+        setErrorMessage('')
+      }, 5000)
+      return
     }
 
-    if (seconds !== '') {
-      currentTime += parseInt(seconds)
+    const newTask = {
+      id: Date.now().toString(36) + Math.random().toString(36),
+      label: text,
+      done: false,
+      edited: false,
+      created: new Date(),
+      activeTimer: false,
+      time,
+      timerId: null,
     }
-
-    const createdTask = {
-      ...newTask,
-      createdAt: new Date(),
-      currentTime: currentTime,
-    }
-
-    this.setState((prevState) => ({
-      tasks: [...prevState.tasks, createdTask],
-    }))
+    setTodoData((prevState) => [newTask, ...prevState])
   }
 
-  startTimer = (taskId) => {
-    clearInterval(this.state.timerIds[taskId])
-
-    const timerId = setInterval(() => {
-      const updatedTasks = this.state.tasks.map((task) => {
-        if (task.id === taskId && task.currentTime > 0) {
-          return { ...task, currentTime: task.currentTime - 1 }
-        } else if (task.id === taskId && task.currentTime === 0) {
-          clearInterval(this.state.timerIds[taskId])
-          return { ...task, isRunning: false }
-        }
-        return task
-      })
-      this.updateTaskState(updatedTasks, taskId)
-    }, 1000)
-
-    this.setState((prevState) => ({
-      timerIds: {
-        ...prevState.timerIds,
-        [taskId]: timerId,
-      },
-    }))
-  }
-
-  pauseTimer = (taskId) => {
-    clearInterval(this.state.timerIds[taskId])
-    const updatedTasks = this.state.tasks.map((task) => {
-      if (task.id === taskId) {
-        return { ...task, isRunning: false }
+  const deleteTask = (id) => {
+    setTodoData((prevState) => {
+      const idx = findIndexById(prevState, id)
+      if (idx !== -1 && prevState[idx].timerId) {
+        clearInterval(prevState[idx].timerId)
       }
-      return task
+      const updatedTasksArray = [...prevState.slice(0, idx), ...prevState.slice(idx + 1)]
+      return updatedTasksArray
     })
-    this.setState({ tasks: updatedTasks })
   }
 
-  updateTaskState = (updatedTasks, taskId) => {
-    const taskToUpdate = updatedTasks.find((task) => task.id === taskId)
-    if (taskToUpdate) {
-      this.setState({
-        tasks: updatedTasks,
-        currentTime: taskToUpdate.currentTime,
+  const onToggleDone = (id) => {
+    setTodoData((prevState) => {
+      const idx = findIndexById(prevState, id)
+      const updatedTasksArray = prevState.map((task, index) => {
+        if (index !== idx) {
+          return task
+        }
+        const updatedTask = { ...task, done: !task.done }
+        if (updatedTask.done) {
+          updatedTask.time = 0
+          clearInterval(task.timerId)
+          updatedTask.timerId = null
+        }
+        return updatedTask
       })
-    } else {
-      console.error(`Task with ID ${taskId} not found.`)
-    }
+      return updatedTasksArray
+    })
   }
 
-  handleDeleteTask = (id) => {
-    this.setState((prevState) => ({
-      tasks: prevState.tasks.filter((task) => task.id !== id),
-    }))
+  const updateTask = (id, newLabel) => {
+    setTodoData((prevState) => {
+      const idx = findIndexById(prevState, id)
+      if (idx !== -1) {
+        const updatedTask = { ...prevState[idx], label: newLabel, created: new Date() }
+        const updatedTasksArray = [...prevState.slice(0, idx), updatedTask, ...prevState.slice(idx + 1)]
+        return updatedTasksArray
+      }
+      return prevState
+    })
   }
 
-  handleClearCompletedTasks = () => {
-    this.setState((prevState) => ({
-      tasks: prevState.tasks.filter((task) => !task.completed),
-    }))
+  const onChangeFilter = (newFilterStatus) => {
+    setFilter(newFilterStatus)
   }
 
-  handleFilterTasks = (filter) => {
-    this.setState({ filter })
+  const onClearCompleted = () => {
+    setTodoData((prevState) => prevState.filter((element) => !element.done))
   }
 
-  filterTasks = (tasks, filter) => {
-    if (filter === 'active') {
-      return tasks.filter((task) => !task.completed)
-    } else if (filter === 'completed') {
-      return tasks.filter((task) => task.completed)
-    } else {
-      return tasks
-    }
-  }
+  const filteredTasks = () =>
+    todoData.filter(({ done }) => {
+      const all = filter === 'All'
+      const completed = filter === 'Completed'
+      return all || (completed && done) || (!completed && !done)
+    })
 
-  clickOnInput = (id) => {
-    this.setState((prevState) => ({
-      tasks: prevState.tasks.map((task) => (task.id === id ? { ...task, completed: !task.completed } : task)),
-    }))
-  }
-
-  countIncompleteTasks = () => {
-    const { tasks } = this.state
-    return tasks.filter((task) => !task.completed).length
-  }
-
-  handleEditTask = (id, newText) => {
-    this.setState((prevState) => ({
-      tasks: prevState.tasks.map((task) => (task.id === id ? { ...task, text: newText } : task)),
-    }))
-  }
-
-  render() {
-    const { filter, tasks } = this.state
-    const filteredTasks = this.filterTasks(tasks, filter)
-
-    return (
-      <section className="todoapp">
-        <header className="header">
-          <h1>TODO App</h1>
-          <NewTaskForm onAddTask={this.handleAddTask} />
-        </header>
-        <section className="main">
-          <TaskList
-            tasks={filteredTasks}
-            onDeleteTask={this.handleDeleteTask}
-            onTaskCompleted={this.handleTaskCompleted}
-            clickOnInput={this.clickOnInput}
-            onEditTask={this.handleEditTask}
-            createdAt={new Date()}
-            minutes={this.state.minutes}
-            seconds={this.state.seconds}
-            startTimer={this.startTimer}
-            pauseTimer={this.pauseTimer}
-          />
-          <Footer
-            filter={this.state.filter}
-            onClearCompletedTasks={this.handleClearCompletedTasks}
-            onFilterTasks={this.handleFilterTasks}
-            countIncompleteTasks={this.countIncompleteTasks}
-          />
-        </section>
-      </section>
+  const timerStep = (id) => {
+    setTodoData((prevState) =>
+      prevState.map((todo) =>
+        todo.id === id && todo.activeTimer ? { ...todo, time: Math.max(0, todo.time - 1000) } : todo
+      )
     )
   }
+
+  const onStartTimer = (id) => {
+    setTodoData((prevState) => prevState.map((todo) => (todo.id === id ? { ...todo, activeTimer: true } : todo)))
+  }
+
+  const onStopTimer = (id) => {
+    setTodoData((prevState) => prevState.map((todo) => (todo.id === id ? { ...todo, activeTimer: false } : todo)))
+  }
+
+  const todoCount = todoData.filter((el) => !el.done).length
+
+  return (
+    <section className="todoapp">
+      <header className="header">
+        <h1>TODO App</h1>
+        <NewTaskForm addItem={addItem} />
+      </header>
+      <section className="main">
+        <TaskList
+          filteredTasks={filteredTasks()}
+          onDelete={deleteTask}
+          onToggleDone={onToggleDone}
+          updateTask={updateTask}
+          onStartTimer={onStartTimer}
+          onStopTimer={onStopTimer}
+          timerStep={timerStep}
+        />
+        <Footer
+          todoCount={todoCount}
+          onChangeFilter={onChangeFilter}
+          filter={filter}
+          onClearCompleted={onClearCompleted}
+        />
+        {errorMessage && <div className="error">{errorMessage}</div>}
+      </section>
+    </section>
+  )
 }
-ReactDOM.render(<App />, document.getElementById('root'))
+
+export default App

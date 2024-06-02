@@ -1,59 +1,41 @@
-import React, { Component } from 'react'
+import React from 'react'
 import PropTypes from 'prop-types'
 
 import Task from './Task'
 import './TaskList.css'
 
-export default class TaskList extends Component {
-  static defaultProps = {
-    tasks: [],
-    onDeleteTask: () => {},
-    onTaskCompleted: () => {},
-    clickOnInput: () => {},
-    onEditTask: () => {},
-    createdAt: new Date(),
-    minutes: '',
-    seconds: '',
-    startTimer: () => {},
-    pauseTimer: () => {},
-  }
+function TaskList({ filteredTasks, onDelete, updateTask, onToggleDone, onStartTimer, onStopTimer, timerStep }) {
+  if (!filteredTasks.length) return null
 
-  static propTypes = {
-    tasks: PropTypes.array.isRequired,
-    onDeleteTask: PropTypes.func.isRequired,
-    onTaskCompleted: PropTypes.func.isRequired,
-    clickOnInput: PropTypes.func.isRequired,
-    onEditTask: PropTypes.func.isRequired,
-    createdAt: PropTypes.instanceOf(Date).isRequired,
-    minutes: PropTypes.string,
-    seconds: PropTypes.string,
-    startTimer: PropTypes.func,
-    pauseTimer: PropTypes.func,
-  }
+  const elements = filteredTasks.map((item) => (
+    <Task
+      id={item.id}
+      label={item.label}
+      done={item.done || false}
+      created={item.created}
+      time={item.time}
+      key={item.id}
+      onDelete={() => onDelete(item.id)}
+      onToggleDone={() => onToggleDone(item.id)}
+      updateTask={updateTask}
+      onStartTimer={onStartTimer}
+      onStopTimer={onStopTimer}
+      timerStep={() => timerStep(item.id)}
+    />
+  ))
 
-  parseCurrentTime(currentTime) {
-    return currentTime ? parseInt(currentTime, 10) : 0
-  }
-
-  render() {
-    const { tasks, onDeleteTask } = this.props
-
-    const taskComponents = tasks.map((task) => (
-      <Task
-        key={task.id}
-        task={task}
-        onDelete={() => onDeleteTask(task.id)}
-        onTaskCompleted={this.props.onTaskCompleted}
-        clickOnInput={this.props.clickOnInput}
-        onEditTask={this.props.onEditTask}
-        createdAt={this.props.createdAt}
-        minutes={task.minutes}
-        seconds={task.seconds}
-        startTimer={this.props.startTimer}
-        pauseTimer={() => this.props.pauseTimer(task.id)}
-      />
-    ))
-
-    return <ul className="todo-list">{taskComponents}</ul>
-  }
+  return <ul className="todo-list">{elements}</ul>
 }
+
+TaskList.defaultProps = {
+  onDelete: () => {},
+  onToggleDone: () => {},
+}
+
+TaskList.propTypes = {
+  onDelete: PropTypes.func,
+  onToggleDone: PropTypes.func,
+  updateTask: PropTypes.func.isRequired,
+}
+
+export default TaskList
